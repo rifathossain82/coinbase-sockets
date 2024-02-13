@@ -1,9 +1,7 @@
+import 'package:coinbase_sockets/models/coinbase_model.dart';
 import 'package:coinbase_sockets/providers/coinbase_provider.dart';
-import 'package:coinbase_sockets/ui/widgets/coin_buttons.dart';
-import 'package:coinbase_sockets/ui/widgets/coin_value.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:coinbase_sockets/ui/widgets/coin_base_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key, required this.provider}) : super(key: key);
@@ -15,32 +13,48 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+
+  @override
+  void initState() {
+    super.initState();
+    widget.provider.openBitcoin();
+  }
+
+  @override
+  void dispose() {
+    widget.provider.closeBitcoin();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white.withOpacity(
-        0.9,
+      appBar: AppBar(
+        title: const Text('Coinbase Sockets'),
       ),
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Expanded(
-                child: CoinValue(
-                  provider: widget.provider,
-                ),
-                flex: 4,
-              ),
-              Expanded(
-                flex: 2,
-                child: CoinButtons(
-                  provider: widget.provider,
-                ),
-              ),
-            ],
-          ),
-        ),
+      body: StreamBuilder<CoinbaseModel>(
+        stream: widget.provider.bitcoinStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.active &&
+              snapshot.hasData) {
+            return CoinbaseWidget(coinbase: snapshot.data!);
+          }
+
+          if (snapshot.connectionState == ConnectionState.done) {
+            return const Center(
+              child: Text('No more data'),
+            );
+          }
+
+          return const Center(
+            child: Text('No data'),
+          );
+        },
       ),
     );
   }
